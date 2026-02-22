@@ -12,7 +12,19 @@ end
 
 class Homebrew::DevCmd::TapNew::Args < Homebrew::CLI::Args
   sig { returns(T.nilable(String)) }
+  def bot_email; end
+
+  sig { returns(T.nilable(String)) }
+  def bot_username; end
+
+  sig { returns(T.nilable(String)) }
   def branch; end
+
+  sig { returns(T::Boolean) }
+  def cask?; end
+
+  sig { returns(T::Boolean) }
+  def formula?; end
 
   sig { returns(T::Boolean) }
   def github_packages?; end
