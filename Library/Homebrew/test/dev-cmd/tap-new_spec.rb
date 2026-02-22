@@ -36,39 +36,39 @@ RSpec.describe Homebrew::DevCmd::TapNew do
   it "creates a cask tap with --cask flag", :integration_test do
     setup_test_formula "gnupg"
 
-    expect { brew "tap-new", "--no-git", "--cask", "homebrew/mycasks" }
+    expect { brew "tap-new", "--no-git", "--cask", "homebrew/cask" }
       .to be_a_success
-      .and output(%r{homebrew/mycasks}).to_stdout
+      .and output(%r{homebrew/cask}).to_stdout
 
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mycasks/Casks").to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mycasks/.github/autobump.txt").to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mycasks/Formula").not_to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mycasks/.github/workflows/tests.yml").not_to exist
-    readme = (HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mycasks/README.md").read
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-cask/Casks").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-cask/.github/autobump.txt").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-cask/Formula").not_to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-cask/.github/workflows/tests.yml").not_to exist
+    readme = (HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-cask/README.md").read
     expect(readme).to include("brew install --cask")
-    expect(readme).not_to include("brew install homebrew/mycasks/<formula>")
+    expect(readme).not_to include("brew install homebrew/cask/<formula>")
   end
 
   it "creates both Formula/ and Casks/ with --formula --cask flags", :integration_test do
     setup_test_formula "gnupg"
 
-    expect { brew "tap-new", "--no-git", "--formula", "--cask", "homebrew/mixed" }
+    expect { brew "tap-new", "--no-git", "--formula", "--cask", "homebrew/test-bot" }
       .to be_a_success
-      .and output(%r{homebrew/mixed}).to_stdout
+      .and output(%r{homebrew/test-bot}).to_stdout
 
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mixed/Formula").to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mixed/Casks").to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mixed/.github/workflows/tests.yml").to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mixed/.github/autobump.txt").to exist
-    readme = (HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-mixed/README.md").read
-    expect(readme).to include("brew install homebrew/mixed/<formula>")
-    expect(readme).to include("brew install --cask homebrew/mixed/<cask>")
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-test-bot/Formula").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-test-bot/Casks").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-test-bot/.github/workflows/tests.yml").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-test-bot/.github/autobump.txt").to exist
+    readme = (HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-test-bot/README.md").read
+    expect(readme).to include("brew install homebrew/test-bot/<formula>")
+    expect(readme).to include("brew install --cask homebrew/test-bot/<cask>")
   end
 
   it "fails when --github-packages and --cask are set without --formula", :integration_test do
     setup_test_formula "gnupg"
 
-    expect { brew "tap-new", "--no-git", "--cask", "--github-packages", "homebrew/badcask" }
+    expect { brew "tap-new", "--no-git", "--cask", "--github-packages", "homebrew/shallow" }
       .to be_a_failure
       .and output(/--github-packages.*--formula/).to_stderr
   end
@@ -76,20 +76,20 @@ RSpec.describe Homebrew::DevCmd::TapNew do
   it "succeeds with --formula --cask --github-packages", :integration_test do
     setup_test_formula "gnupg"
 
-    expect { brew "tap-new", "--no-git", "--formula", "--cask", "--github-packages", "homebrew/gpkgs" }
+    expect { brew "tap-new", "--no-git", "--formula", "--cask", "--github-packages", "homebrew/shallow" }
       .to be_a_success
-      .and output(%r{homebrew/gpkgs}).to_stdout
+      .and output(%r{homebrew/shallow}).to_stdout
 
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-gpkgs/Formula").to exist
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-gpkgs/Casks").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-shallow/Formula").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-shallow/Casks").to exist
   end
 
   it "creates .github/autobump.txt for the default formula tap", :integration_test do
     setup_test_formula "gnupg"
 
-    expect { brew "tap-new", "--no-git", "homebrew/atp" }
+    expect { brew "tap-new", "--no-git", "homebrew/foo" }
       .to be_a_success
 
-    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-atp/.github/autobump.txt").to exist
+    expect(HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-foo/.github/autobump.txt").to exist
   end
 end
