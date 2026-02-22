@@ -149,11 +149,7 @@ module Homebrew
       def adapt_cask_ci(content, branch)
         result = content.dup
 
-        # Replace push branches with parameterized branch.
-        result.gsub!(
-          /^(  push:\n    branches:\n)      - main\n      - master\n/,
-          "\\1      - #{branch}\n",
-        )
+        replace_push_branches!(result, branch)
 
         # Remove merge_group trigger (personal taps don't use merge queues).
         result.gsub!(/^  merge_group:\n/, "")
@@ -174,11 +170,7 @@ module Homebrew
       def adapt_actionlint(content, branch, tap_user)
         result = content.dup
 
-        # Replace push branches with parameterized branch.
-        result.gsub!(
-          /^(  push:\n    branches:\n)      - main\n      - master\n/,
-          "\\1      - #{branch}\n",
-        )
+        replace_push_branches!(result, branch)
 
         # Replace Homebrew org guard with the tap owner.
         result.gsub!("github.repository_owner == 'Homebrew'", "github.repository_owner == '#{tap_user}'")
@@ -211,29 +203,7 @@ module Homebrew
         # Replace Homebrew-specific API token secret.
         result.gsub!("secrets.HOMEBREW_CASK_REPO_WORKFLOW_TOKEN", "secrets.BOT_TOKEN")
 
-        # Configure Git committer identity.
-        if bot_username
-          result.gsub!(
-            "${{ (github.event_name == 'workflow_dispatch' && github.actor) || 'BrewTestBot' }}",
-            bot_username,
-          )
-          result.gsub!("HOMEBREW_GIT_COMMITTER_NAME: BrewTestBot", "HOMEBREW_GIT_COMMITTER_NAME: #{bot_username}")
-        else
-          result.gsub!("HOMEBREW_GIT_COMMITTER_NAME: BrewTestBot",
-                       "HOMEBREW_GIT_COMMITTER_NAME: # TODO: set bot username")
-        end
-
-        if bot_email
-          result.gsub!(
-            "HOMEBREW_GIT_COMMITTER_EMAIL: 1589480+BrewTestBot@users.noreply.github.com",
-            "HOMEBREW_GIT_COMMITTER_EMAIL: #{bot_email}",
-          )
-        else
-          result.gsub!(
-            "HOMEBREW_GIT_COMMITTER_EMAIL: 1589480+BrewTestBot@users.noreply.github.com",
-            "HOMEBREW_GIT_COMMITTER_EMAIL: # TODO: set bot email",
-          )
-        end
+        replace_bot_credentials!(result, bot_username, bot_email)
 
         # Replace upstream tap reference with this tap.
         result.gsub!("--auto --tap=Homebrew/cask", "--auto --tap=#{tap.user}/#{tap.repository}")
@@ -253,11 +223,7 @@ module Homebrew
       def adapt_formula_autobump(content, tap, branch, bot_username, bot_email)
         result = content.dup
 
-        # Replace push branches with parameterized branch.
-        result.gsub!(
-          /^(  push:\n    branches:\n)      - main\n      - master\n/,
-          "\\1      - #{branch}\n",
-        )
+        replace_push_branches!(result, branch)
 
         # Replace Homebrew org guard with the tap owner.
         result.gsub!("github.repository_owner == 'Homebrew'", "github.repository_owner == '#{tap.user}'")
@@ -274,7 +240,24 @@ module Homebrew
         # Replace Homebrew-specific API token secret.
         result.gsub!("secrets.HOMEBREW_CORE_REPO_WORKFLOW_TOKEN", "secrets.BOT_TOKEN")
 
-        # Configure Git committer identity.
+        replace_bot_credentials!(result, bot_username, bot_email)
+
+        # Replace upstream tap reference with this tap.
+        result.gsub!("--auto --tap=Homebrew/core", "--auto --tap=#{tap.user}/#{tap.repository}")
+
+        result
+      end
+
+      sig { params(result: String, branch: String).void }
+      def replace_push_branches!(result, branch)
+        result.gsub!(
+          /^(  push:\n    branches:\n)      - main\n      - master\n/,
+          "\\1      - #{branch}\n",
+        )
+      end
+
+      sig { params(result: String, bot_username: T.nilable(String), bot_email: T.nilable(String)).void }
+      def replace_bot_credentials!(result, bot_username, bot_email)
         if bot_username
           result.gsub!(
             "${{ (github.event_name == 'workflow_dispatch' && github.actor) || 'BrewTestBot' }}",
@@ -297,11 +280,6 @@ module Homebrew
             "HOMEBREW_GIT_COMMITTER_EMAIL: # TODO: set bot email",
           )
         end
-
-        # Replace upstream tap reference with this tap.
-        result.gsub!("--auto --tap=Homebrew/core", "--auto --tap=#{tap.user}/#{tap.repository}")
-
-        result
       end
 
       sig { params(content: String, tap_user: String).returns(String) }
