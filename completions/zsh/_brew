@@ -2084,12 +2084,16 @@ _brew_tap_info() {
 # brew tap-new
 _brew_tap_new() {
   _arguments \
+    '--bot-email[Commit email for the automated bump bot, e.g. "12345+bot@users.noreply.github.com" (used in autobump.yml)]' \
+    '--bot-username[GitHub username for the automated bump bot (used in autobump.yml)]' \
     '--branch[Initialize Git repository and setup GitHub Actions workflows with the specified branch name (default: `main`)]' \
+    '--cask[Generate cask tap scaffolding (Casks/ directory, cask CI workflows)]' \
     '--debug[Display any debugging information]' \
+    '--formula[Explicitly generate formula tap scaffolding (Formula/ directory, bottle workflows). This is the default if neither `--formula` nor `--cask` is specified]' \
     '--github-packages[Upload bottles to GitHub Packages]' \
     '--help[Show this message]' \
     '--no-git[Don'\''t initialize a Git repository for the tap]' \
-    '--pull-label[Label name for pull requests ready to be pulled (default: `pr-pull`)]' \
+    '--pull-label[Label name for pull requests ready to be pulled. When a PR with this label is created, the `publish.yml` workflow triggers `brew pr-pull` to merge bottles into the tap (default: `pr-pull`). Only used for formula taps]' \
     '--quiet[Make some output more quiet]' \
     '--verbose[Make some output more verbose]' \
     - tap \
