@@ -3260,9 +3260,21 @@ Generate the template files for a new tap.
 
 : Don't initialize a Git repository for the tap.
 
+`--formula`
+
+: Explicitly generate formula tap scaffolding (Formula/ directory, bottle
+  workflows). This is the default if neither `--formula` nor `--cask` is
+  specified.
+
+`--cask`
+
+: Generate cask tap scaffolding (Casks/ directory, cask CI workflows).
+
 `--pull-label`
 
-: Label name for pull requests ready to be pulled (default: `pr-pull`).
+: Label name for pull requests ready to be pulled. When a PR with this label is
+  created, the `publish.yml` workflow triggers `brew pr-pull` to merge bottles
+  into the tap (default: `pr-pull`). Only used for formula taps.
 
 `--branch`
 
@@ -3272,6 +3284,15 @@ Generate the template files for a new tap.
 `--github-packages`
 
 : Upload bottles to GitHub Packages.
+
+`--bot-username`
+
+: GitHub username for the automated bump bot (used in autobump.yml).
+
+`--bot-email`
+
+: Commit email for the automated bump bot, e.g.
+  "12345+bot@users.noreply.github.com" (used in autobump.yml).
 
 ### `test` \[*`options`*\] *`installed_formula`* \[...\]
 

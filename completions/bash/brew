@@ -2591,8 +2591,12 @@ _brew_tap_new() {
   case "${cur}" in
     -*)
       __brewcomp "
+      --bot-email
+      --bot-username
       --branch
+      --cask
       --debug
+      --formula
       --github-packages
       --help
       --no-git
