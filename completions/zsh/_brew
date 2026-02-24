@@ -222,6 +222,7 @@ __brew_internal_commands() {
     'shellenv:Valid shells: bash|csh|fish|pwsh|sh|tcsh|zsh  Print export statements'
     'source:Open a formula'\''s source repository in a browser, or open Homebrew'\''s own repository if no argument is provided'
     'style:Check formulae or files for conformance to Homebrew style guidelines'
+    'sync_tap_workflows:Fetch and adapt upstream Homebrew CI workflow files for use in a third-party tap'
     'tab:Edit tab information for installed formulae or casks'
     'tap:Tap a formula repository'
     'tap-info:Show detailed information about one or more taps'
@@ -2034,6 +2035,23 @@ _brew_style() {
     - cask \
     '(--formula)--cask[Treat all named arguments as casks]' \
     '*:cask:__brew_casks'
+}
+
+# brew sync_tap_workflows
+_brew_sync_tap_workflows() {
+  _arguments \
+    '--bot-email[Commit email for the automated bump bot (used in autobump.yml)]' \
+    '--bot-username[GitHub username for the automated bump bot (used in autobump.yml)]' \
+    '--branch[Branch name for push triggers in workflows (default: `main`)]' \
+    '--cask[Sync cask CI workflows from Homebrew/homebrew-cask]' \
+    '--debug[Display any debugging information]' \
+    '--dry-run[Print what would be done rather than doing it]' \
+    '--formula[Sync formula CI workflows from Homebrew/homebrew-core]' \
+    '--help[Show this message]' \
+    '--quiet[Make some output more quiet]' \
+    '--verbose[Make some output more verbose]' \
+    - tap \
+    '*:tap:__brew_any_tap'
 }
 
 # brew tab

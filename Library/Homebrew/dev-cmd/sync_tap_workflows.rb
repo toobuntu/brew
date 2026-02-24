@@ -26,6 +26,7 @@ module Homebrew
         "https://raw.githubusercontent.com/Homebrew/.github/HEAD/.github/workflows",
         String,
       )
+      private_constant :CASK_WORKFLOWS, :FORMULA_WORKFLOWS, :CASK_RAW_URL, :CORE_RAW_URL, :ORG_GITHUB_RAW_URL
 
       cmd_args do
         usage_banner "`sync-tap-workflows` [<options>] <user>`/`<repo>"
