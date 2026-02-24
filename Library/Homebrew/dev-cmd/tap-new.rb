@@ -283,7 +283,7 @@ module Homebrew
         write_path(tap, ".github/autobump.txt", autobump_txt)
 
         if generate_cask || args.formula?
-          sync_args = T.let([], T::Array[String])
+          sync_args = []
           sync_args << "--cask" if generate_cask
           sync_args << "--formula" if generate_formula
           sync_args << "--branch=#{branch}"
@@ -291,7 +291,9 @@ module Homebrew
           sync_args << "--bot-email=#{bot_email}" if bot_email
           sync_args << tap.name
 
-          unless system(HOMEBREW_BREW_FILE, "sync-tap-workflows", *sync_args)
+          begin
+            safe_system HOMEBREW_BREW_FILE, "sync-tap-workflows", *sync_args
+          rescue ErrorDuringExecution
             opoo "Could not generate CI workflows."
             opoo "Run `brew sync-tap-workflows #{sync_args.join(" ")}` later to generate them."
           end
