@@ -1155,11 +1155,17 @@ _brew_extract() {
   case "${cur}" in
     -*)
       __brewcomp "
+      --cask
       --debug
       --force
+      --formula
       --git-revision
       --help
+      --keep-livecheck
+      --no-shard
       --quiet
+      --remove-deprecations
+      --unversioned
       --verbose
       --version
       "
@@ -1168,6 +1174,7 @@ _brew_extract() {
     *) ;;
   esac
   __brew_complete_formulae
+  __brew_complete_casks
   __brew_complete_tapped
 }
 

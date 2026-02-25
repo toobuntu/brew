@@ -170,7 +170,7 @@ __brew_internal_commands() {
     'docs:Open Homebrew'\''s online documentation at https://docs.brew.sh in a browser'
     'doctor:Check your system for potential problems'
     'edit:Open a formula, cask or tap in the editor set by `$EDITOR` or `$HOMEBREW_EDITOR`, or open the Homebrew repository for editing if no argument is provided'
-    'extract:Look through repository history to find the most recent version of formula and create a copy in tap'
+    'extract:Look through repository history to find the most recent version of formula or cask and create a copy in tap'
     'fetch:Download a bottle (if available) or source packages for formulae and binaries for casks'
     'formula:Display the path where formula is located'
     'formula-analytics:Query Homebrew'\''s analytics'
@@ -1023,14 +1023,22 @@ _brew_environment() {
 _brew_extract() {
   _arguments \
     '--debug[Display any debugging information]' \
-    '--force[Overwrite the destination formula if it already exists]' \
-    '--git-revision[Search for the specified version of formula starting at revision instead of HEAD]' \
+    '--force[Overwrite the destination formula or cask if it already exists]' \
+    '--git-revision[Search for the specified version starting at revision instead of HEAD]' \
     '--help[Show this message]' \
+    '--keep-livecheck[Keep livecheck block in versioned extractions (default: remove for snapshots)]' \
+    '--no-shard[Do not organize output into sharded subdirectories]' \
     '--quiet[Make some output more quiet]' \
+    '--remove-deprecations[Comment out `deprecate!` and `disable!` stanzas]' \
+    '(--version)--unversioned[Extract without version suffix (receives updates via `brew upgrade`)]' \
     '--verbose[Make some output more verbose]' \
-    '--version[Extract the specified version of formula instead of the most recent]' \
+    '(--unversioned)--version[Extract the specified version instead of the most recent]' \
     - formula \
+    '(--cask)--formula[Treat all named arguments as formulae]' \
     '*:formula:__brew_formulae' \
+    - cask \
+    '(--formula)--cask[Treat all named arguments as casks]' \
+    '*:cask:__brew_casks' \
     - tap \
     '*:tap:__brew_any_tap'
 }

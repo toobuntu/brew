@@ -2673,27 +2673,51 @@ is provided.
 
 : Print the file path to be edited, without opening an editor.
 
-### `extract` \[`--version=`\] \[`--git-revision=`\] \[`--force`\] *`formula`* *`tap`*
+### `extract` \[*`options`*\] *`formula`*\|*`cask`* *`tap`*
 
 Look through repository history to find the most recent version of *`formula`*
-and create a copy in *`tap`*. Specifically, the command will create the new
-formula file at *`tap`*`/Formula/`*`formula`*`@`*`version`*`.rb`. If the tap is
-not installed yet, attempt to install/clone the tap before continuing. To
-extract a formula from a tap that is not `homebrew/core` use its fully-qualified
-form of *`user`*`/`*`repo`*`/`*`formula`*.
+or *`cask`* and create a copy in *`tap`*. Specifically, the command will create
+the new formula file at *`tap`*`/Formula/`*`formula`*`@`*`version`*`.rb` or the
+new cask file at *`tap`*`/Casks/`*`cask`*`@`*`version`*`.rb`. If the tap is not
+installed yet, attempt to install/clone the tap before continuing. To extract
+from a tap that is not `homebrew/core` or `homebrew/cask` use the
+fully-qualified form of *`user`*`/`*`repo`*`/`*`formula`*\|*`cask`*.
 
 `--git-revision`
 
-: Search for the specified *`version`* of *`formula`* starting at *`revision`*
-  instead of HEAD.
+: Search for the specified *`version`* starting at *`revision`* instead of HEAD.
 
 `--version`
 
-: Extract the specified *`version`* of *`formula`* instead of the most recent.
+: Extract the specified *`version`* instead of the most recent.
 
 `-f`, `--force`
 
-: Overwrite the destination formula if it already exists.
+: Overwrite the destination formula or cask if it already exists.
+
+`--unversioned`
+
+: Extract without version suffix (receives updates via `brew upgrade`).
+
+`--remove-deprecations`
+
+: Comment out `deprecate!` and `disable!` stanzas.
+
+`--keep-livecheck`
+
+: Keep livecheck block in versioned extractions (default: remove for snapshots).
+
+`--no-shard`
+
+: Do not organize output into sharded subdirectories.
+
+`--formula`
+
+: Treat all named arguments as formulae.
+
+`--cask`
+
+: Treat all named arguments as casks.
 
 ### `formula` *`formula`* \[...\]
 

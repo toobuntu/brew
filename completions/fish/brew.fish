@@ -805,15 +805,22 @@ __fish_brew_complete_arg 'environment' -l verbose -d 'Make some output more verb
 __fish_brew_complete_arg 'environment' -a '(__fish_brew_suggest_formulae_all)'
 
 
-__fish_brew_complete_cmd 'extract' 'Look through repository history to find the most recent version of formula and create a copy in tap'
+__fish_brew_complete_cmd 'extract' 'Look through repository history to find the most recent version of formula or cask and create a copy in tap'
+__fish_brew_complete_arg 'extract' -l cask -d 'Treat all named arguments as casks'
 __fish_brew_complete_arg 'extract' -l debug -d 'Display any debugging information'
-__fish_brew_complete_arg 'extract' -l force -d 'Overwrite the destination formula if it already exists'
-__fish_brew_complete_arg 'extract' -l git-revision -d 'Search for the specified version of formula starting at revision instead of HEAD'
+__fish_brew_complete_arg 'extract' -l force -d 'Overwrite the destination formula or cask if it already exists'
+__fish_brew_complete_arg 'extract' -l formula -d 'Treat all named arguments as formulae'
+__fish_brew_complete_arg 'extract' -l git-revision -d 'Search for the specified version starting at revision instead of HEAD'
 __fish_brew_complete_arg 'extract' -l help -d 'Show this message'
+__fish_brew_complete_arg 'extract' -l keep-livecheck -d 'Keep livecheck block in versioned extractions (default: remove for snapshots)'
+__fish_brew_complete_arg 'extract' -l no-shard -d 'Do not organize output into sharded subdirectories'
 __fish_brew_complete_arg 'extract' -l quiet -d 'Make some output more quiet'
+__fish_brew_complete_arg 'extract' -l remove-deprecations -d 'Comment out `deprecate!` and `disable!` stanzas'
+__fish_brew_complete_arg 'extract' -l unversioned -d 'Extract without version suffix (receives updates via `brew upgrade`)'
 __fish_brew_complete_arg 'extract' -l verbose -d 'Make some output more verbose'
-__fish_brew_complete_arg 'extract' -l version -d 'Extract the specified version of formula instead of the most recent'
-__fish_brew_complete_arg 'extract' -a '(__fish_brew_suggest_formulae_all)'
+__fish_brew_complete_arg 'extract' -l version -d 'Extract the specified version instead of the most recent'
+__fish_brew_complete_arg 'extract; and not __fish_seen_argument -l cask -l casks' -a '(__fish_brew_suggest_formulae_all)'
+__fish_brew_complete_arg 'extract; and not __fish_seen_argument -l formula -l formulae' -a '(__fish_brew_suggest_casks_all)'
 __fish_brew_complete_arg 'extract' -a '(__fish_brew_suggest_taps_installed)'
 
 
