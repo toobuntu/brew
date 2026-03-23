@@ -146,29 +146,29 @@ module Homebrew
 
       sig { params(yaml: T.untyped, tap: Tap, branch: String).void }
       def apply_general_mutations!(yaml, tap, branch)
-        return unless yaml.is_a?(Hash)
+        return unless yaml.respond_to?(:each_value)
 
-        on = yaml["on"]
-        if on.is_a?(Hash)
+        on = yaml["on"] || yaml[true]
+        if on.respond_to?(:dig)
           on["push"]["branches"] = [branch] if on.dig("push", "branches")
-          on.delete("merge_group") if on.key?("merge_group")
+          on.delete("merge_group") if on.respond_to?(:key?) && on.key?("merge_group")
         end
 
-        return unless yaml["jobs"].is_a?(Hash)
+        return unless yaml["jobs"].respond_to?(:each_value)
 
         yaml["jobs"].each_value do |job|
-          next unless job.is_a?(Hash)
+          next unless job.respond_to?(:each_value)
 
-          job["if"] = adapt_condition(job["if"], tap) if job["if"].is_a?(String)
+          job["if"] = adapt_condition(job["if"].to_s, tap) if job["if"].respond_to?(:gsub)
 
-          next unless job["steps"].is_a?(Array)
+          next unless job["steps"].respond_to?(:to_ary)
 
           job["steps"].each do |step|
-            next unless step.is_a?(Hash)
+            next unless step.respond_to?(:each_value)
 
-            step["if"] = adapt_condition(step["if"], tap) if step["if"].is_a?(String)
+            step["if"] = adapt_condition(step["if"].to_s, tap) if step["if"].respond_to?(:gsub)
 
-            step["run"] = adapt_run_script(step["run"], tap) if step["run"].is_a?(String)
+            step["run"] = adapt_run_script(step["run"].to_s, tap) if step["run"].respond_to?(:gsub)
           end
         end
       end
@@ -205,45 +205,47 @@ module Homebrew
         ).void
       }
       def apply_autobump_mutations!(yaml, bot_username, bot_email)
-        return unless yaml.is_a?(Hash)
-        return unless yaml["jobs"].is_a?(Hash)
+        return unless yaml.respond_to?(:each_value)
+        return unless yaml["jobs"].respond_to?(:each_value)
 
         yaml["jobs"].each_value do |job|
-          next unless job.is_a?(Hash)
+          next unless job.respond_to?(:each_value)
 
-          if job["steps"].is_a?(Array)
-            job["steps"].reject! { |step| step.is_a?(Hash) && step["name"].to_s.match?(/set up commit signing/i) }
+          if job["steps"].respond_to?(:to_ary)
+            job["steps"].reject! do |step|
+              step.respond_to?(:each_value) && step["name"].to_s.match?(/set up commit signing/i)
+            end
           end
 
-          adapt_env_hash!(job["env"], bot_username, bot_email) if job["env"].is_a?(Hash)
+          adapt_env_hash!(job["env"], bot_username, bot_email) if job["env"].respond_to?(:each_key)
 
-          next unless job["steps"].is_a?(Array)
+          next unless job["steps"].respond_to?(:to_ary)
 
           job["steps"].each do |step|
-            next unless step.is_a?(Hash)
+            next unless step.respond_to?(:each_value)
 
-            adapt_env_hash!(step["env"], bot_username, bot_email) if step["env"].is_a?(Hash)
+            adapt_env_hash!(step["env"], bot_username, bot_email) if step["env"].respond_to?(:each_key)
           end
         end
       end
 
       sig {
         params(
-          env:          T::Hash[String, T.untyped],
+          env:          T.untyped,
           bot_username: T.nilable(String),
           bot_email:    T.nilable(String),
         ).void
       }
       def adapt_env_hash!(env, bot_username, bot_email)
-        env.transform_values! do |val|
-          next val unless val.is_a?(String)
+        env.each_key do |key|
+          val = env[key]
+          next unless val.respond_to?(:gsub)
 
-          val = val
-                .gsub("secrets.HOMEBREW_CASK_REPO_WORKFLOW_TOKEN", "secrets.BOT_TOKEN")
-                .gsub("secrets.HOMEBREW_CORE_REPO_WORKFLOW_TOKEN", "secrets.BOT_TOKEN")
-          val = val.gsub("BrewTestBot", bot_username) if bot_username
-          val = val.gsub("1589480+BrewTestBot@users.noreply.github.com", bot_email) if bot_email
-          val
+          new_val = val.gsub("secrets.HOMEBREW_CASK_REPO_WORKFLOW_TOKEN", "secrets.BOT_TOKEN")
+                       .gsub("secrets.HOMEBREW_CORE_REPO_WORKFLOW_TOKEN", "secrets.BOT_TOKEN")
+          new_val = new_val.gsub("BrewTestBot", bot_username) if bot_username
+          new_val = new_val.gsub("1589480+BrewTestBot@users.noreply.github.com", bot_email) if bot_email
+          env[key] = new_val
         end
       end
     end
