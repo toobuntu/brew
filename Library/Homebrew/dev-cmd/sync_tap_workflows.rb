@@ -61,25 +61,32 @@ module Homebrew
         bot_username = args.bot_username
         bot_email = args.bot_email
         workflows_dir = tap.path/".github/workflows"
+        synced_paths = T.let([], T::Array[Pathname])
 
         if args.cask?
           CASK_WORKFLOWS.each do |filename|
             content = fetch_workflow(CASK_RAW_URL, filename)
-            process_workflow(content, filename, tap, branch:, bot_username:, bot_email:, workflows_dir:)
+            synced_paths << process_workflow(content, filename, tap,
+                                             branch:, bot_username:, bot_email:, workflows_dir:)
           end
         end
 
-        return unless args.formula?
-
-        FORMULA_WORKFLOWS.each do |filename|
-          base_url = case filename
-          when "autobump.yml" then CORE_RAW_URL
-          when "actionlint.yml" then ORG_GITHUB_RAW_URL
-          else CASK_RAW_URL
+        if args.formula?
+          FORMULA_WORKFLOWS.each do |filename|
+            base_url = case filename
+            when "autobump.yml" then CORE_RAW_URL
+            when "actionlint.yml" then ORG_GITHUB_RAW_URL
+            else CASK_RAW_URL
+            end
+            content = fetch_workflow(base_url, filename)
+            synced_paths << process_workflow(content, filename, tap,
+                                             branch:, bot_username:, bot_email:, workflows_dir:)
           end
-          content = fetch_workflow(base_url, filename)
-          process_workflow(content, filename, tap, branch:, bot_username:, bot_email:, workflows_dir:)
         end
+
+        action = args.dry_run? ? "Would sync" : "Synced"
+        ohai "#{action} #{synced_paths.size} workflow file(s):"
+        synced_paths.each { |path| puts "  #{path}" } unless synced_paths.empty?
       end
 
       private
@@ -101,7 +108,7 @@ module Homebrew
           bot_username:  T.nilable(String),
           bot_email:     T.nilable(String),
           workflows_dir: Pathname,
-        ).void
+        ).returns(Pathname)
       }
       def process_workflow(content, filename, tap, branch:, bot_username:, bot_email:, workflows_dir:)
         yaml = Psych::Pure.load(content, comments: true)
@@ -134,6 +141,7 @@ module Homebrew
           output_path.write(output)
           ohai "Wrote #{output_path}"
         end
+        output_path
       end
 
       sig { params(yaml: T.untyped, tap: Tap, branch: String).void }
