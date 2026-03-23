@@ -102,7 +102,6 @@ sh
 shellenv
 source
 style
-sync_tap_workflows
 tab
 tap
 tap-info

@@ -70,129 +70,11 @@ module Homebrew
         MARKDOWN
         write_path(tap, "README.md", readme)
 
-        tests_yml = <<~ERB
-          name: brew test-bot
-
-          on:
-            push:
-              branches:
-                - <%= branch %>
-            pull_request:
-
-          jobs:
-            test-bot:
-              strategy:
-                matrix:
-                  os: [ ubuntu-22.04, macos-15-intel, macos-26 ]
-              runs-on: ${{ matrix.os }}
-              permissions:
-                actions: read
-                checks: read
-                contents: read
-          <% if args.github_packages? -%>
-                packages: read
-          <% end -%>
-                pull-requests: read
-              steps:
-                - name: Set up Homebrew
-                  id: set-up-homebrew
-                  uses: Homebrew/actions/setup-homebrew@main
-                  with:
-                    token: ${{ secrets.GITHUB_TOKEN }}
-
-                - name: Cache Homebrew Bundler RubyGems
-                  uses: actions/cache@v4
-                  with:
-                    path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-                    key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-                    restore-keys: ${{ matrix.os }}-rubygems-
-
-                - run: brew test-bot --only-cleanup-before
-
-                - run: brew test-bot --only-setup
-
-                - run: brew test-bot --only-tap-syntax
-          <% if args.github_packages? -%>
-                - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
-                  id: base64-encode
-                  if: github.event_name == 'pull_request'
-                  env:
-                    TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  run: |
-                    base64_token=$(echo -n "${TOKEN}" | base64 | tr -d "\\n")
-                    echo "::add-mask::${base64_token}"
-                    echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
-          <% end -%>
-                - run: brew test-bot --only-formulae#{" --root-url=#{root_url}" if root_url}
-                  if: github.event_name == 'pull_request'
-          <% if args.github_packages? -%>
-                  env:
-                    HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
-          <% end -%>
-
-                - name: Upload bottles as artifact
-                  if: always() && github.event_name == 'pull_request'
-                  uses: actions/upload-artifact@v4
-                  with:
-                    name: bottles_${{ matrix.os }}
-                    path: '*.bottle.*'
-        ERB
-
-        publish_yml = <<~ERB
-          name: brew pr-pull
-
-          on:
-            pull_request_target:
-              types:
-                - labeled
-
-          jobs:
-            pr-pull:
-              if: contains(github.event.pull_request.labels.*.name, '<%= label %>')
-              runs-on: ubuntu-22.04
-              permissions:
-                actions: read
-                checks: read
-                contents: write
-                issues: read
-          <% if args.github_packages? -%>
-                packages: write
-          <% end -%>
-                pull-requests: write
-              steps:
-                - name: Set up Homebrew
-                  uses: Homebrew/actions/setup-homebrew@main
-                  with:
-                    token: ${{ secrets.GITHUB_TOKEN }}
-
-                - name: Set up git
-                  uses: Homebrew/actions/git-user-config@main
-
-                - name: Pull bottles
-                  env:
-                    HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          <% if args.github_packages? -%>
-                    HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
-          <% end -%>
-                    PULL_REQUEST: ${{ github.event.pull_request.number }}
-                  run: brew pr-pull --debug --tap="$GITHUB_REPOSITORY" "$PULL_REQUEST"
-
-                - name: Push commits
-                  uses: Homebrew/actions/git-try-push@main
-                  with:
-                    branch: <%= branch %>
-
-                - name: Delete branch
-                  if: github.event.pull_request.head.repo.fork == false
-                  env:
-                    BRANCH: ${{ github.event.pull_request.head.ref }}
-                  run: git push --delete origin "$BRANCH"
-        ERB
-
         (tap.path/".github/workflows").mkpath
-        write_path(tap, ".github/workflows/tests.yml", ERB.new(tests_yml, trim_mode: "-").result(binding))
-        write_path(tap, ".github/workflows/publish.yml", ERB.new(publish_yml, trim_mode: "-").result(binding))
+        write_path(tap, ".github/workflows/tests.yml",
+                   TapNew.render_tests_yml(branch:, github_packages: args.github_packages?, root_url:))
+        write_path(tap, ".github/workflows/publish.yml",
+                   TapNew.render_publish_yml(branch:, label:, github_packages: args.github_packages?))
 
         unless args.no_git?
           cd tap.path do |path|
@@ -232,6 +114,132 @@ module Homebrew
           (all checks passed), then you can publish the built bottles.
           To do so, label your PR as `#{label}` and the workflow will be triggered.
         EOS
+      end
+
+      sig { params(branch: String, github_packages: T::Boolean, root_url: T.nilable(String)).returns(String) }
+      def self.render_tests_yml(branch:, github_packages: false, root_url: nil)
+        ERB.new(<<~ERB, trim_mode: "-").result(binding)
+          name: brew test-bot
+
+          on:
+            push:
+              branches:
+                - <%= branch %>
+            pull_request:
+
+          jobs:
+            test-bot:
+              strategy:
+                matrix:
+                  os: [ ubuntu-22.04, macos-15-intel, macos-26 ]
+              runs-on: ${{ matrix.os }}
+              permissions:
+                actions: read
+                checks: read
+                contents: read
+          <% if github_packages -%>
+                packages: read
+          <% end -%>
+                pull-requests: read
+              steps:
+                - name: Set up Homebrew
+                  id: set-up-homebrew
+                  uses: Homebrew/actions/setup-homebrew@main
+                  with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+
+                - name: Cache Homebrew Bundler RubyGems
+                  uses: actions/cache@v4
+                  with:
+                    path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+                    key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+                    restore-keys: ${{ matrix.os }}-rubygems-
+
+                - run: brew test-bot --only-cleanup-before
+
+                - run: brew test-bot --only-setup
+
+                - run: brew test-bot --only-tap-syntax
+          <% if github_packages -%>
+                - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
+                  id: base64-encode
+                  if: github.event_name == 'pull_request'
+                  env:
+                    TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  run: |
+                    base64_token=$(echo -n "${TOKEN}" | base64 | tr -d "\n")
+                    echo "::add-mask::${base64_token}"
+                    echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
+          <% end -%>
+                - run: brew test-bot --only-formulae<%= root_url ? " --root-url=#{root_url}" : "" %>
+                  if: github.event_name == 'pull_request'
+          <% if github_packages -%>
+                  env:
+                    HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
+          <% end -%>
+
+                - name: Upload bottles as artifact
+                  if: always() && github.event_name == 'pull_request'
+                  uses: actions/upload-artifact@v4
+                  with:
+                    name: bottles_${{ matrix.os }}
+                    path: '*.bottle.*'
+        ERB
+      end
+
+      sig { params(branch: String, label: String, github_packages: T::Boolean).returns(String) }
+      def self.render_publish_yml(branch:, label:, github_packages: false)
+        ERB.new(<<~ERB, trim_mode: "-").result(binding)
+          name: brew pr-pull
+
+          on:
+            pull_request_target:
+              types:
+                - labeled
+
+          jobs:
+            pr-pull:
+              if: contains(github.event.pull_request.labels.*.name, '<%= label %>')
+              runs-on: ubuntu-22.04
+              permissions:
+                actions: read
+                checks: read
+                contents: write
+                issues: read
+          <% if github_packages -%>
+                packages: write
+          <% end -%>
+                pull-requests: write
+              steps:
+                - name: Set up Homebrew
+                  uses: Homebrew/actions/setup-homebrew@main
+                  with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+
+                - name: Set up git
+                  uses: Homebrew/actions/git-user-config@main
+
+                - name: Pull bottles
+                  env:
+                    HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          <% if github_packages -%>
+                    HOMEBREW_GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    HOMEBREW_GITHUB_PACKAGES_USER: ${{ github.repository_owner }}
+          <% end -%>
+                    PULL_REQUEST: ${{ github.event.pull_request.number }}
+                  run: brew pr-pull --debug --tap="$GITHUB_REPOSITORY" "$PULL_REQUEST"
+
+                - name: Push commits
+                  uses: Homebrew/actions/git-try-push@main
+                  with:
+                    branch: <%= branch %>
+
+                - name: Delete branch
+                  if: github.event.pull_request.head.repo.fork == false
+                  env:
+                    BRANCH: ${{ github.event.pull_request.head.ref }}
+                  run: git push --delete origin "$BRANCH"
+        ERB
       end
 
       private

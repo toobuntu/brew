@@ -3252,39 +3252,6 @@ core code and all formulae.
 : Specify a comma-separated *`cops`* list to skip checking for violations of the
   listed RuboCop cops.
 
-### `sync-tap-workflows` \[*`options`*\] *`user`*`/`*`repo`*
-
-Fetch and adapt upstream Homebrew CI workflow files for use in a third-party
-tap.
-
-`--cask`
-
-: Sync cask CI workflows from Homebrew/homebrew-cask.
-
-`--formula`
-
-: Sync formula CI workflows from Homebrew/homebrew-core.
-
-`--branch`
-
-: Branch name for push triggers in workflows (default: `main`).
-
-`--bot-username`
-
-: GitHub username for the automated bump bot (used in autobump.yml).
-
-`--bot-email`
-
-: Commit email for the automated bump bot (used in autobump.yml).
-
-`-n`, `--dry-run`
-
-: Print what would be done rather than doing it.
-
-`--pull-label`
-
-: Label name for PR-pull workflows in publish.yml (default: `pr-pull`).
-
 ### `tap-new` \[*`options`*\] *`user`*`/`*`repo`*
 
 Generate the template files for a new tap.

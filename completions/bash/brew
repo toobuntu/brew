@@ -2524,30 +2524,6 @@ _brew_style() {
   __brew_complete_casks
 }
 
-_brew_sync_tap_workflows() {
-  local cur="${COMP_WORDS[COMP_CWORD]}"
-  case "${cur}" in
-    -*)
-      __brewcomp "
-      --bot-email
-      --bot-username
-      --branch
-      --cask
-      --debug
-      --dry-run
-      --formula
-      --help
-      --pull-label
-      --quiet
-      --verbose
-      "
-      return
-      ;;
-    *) ;;
-  esac
-  __brew_complete_tapped
-}
-
 _brew_tab() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
   case "${cur}" in
@@ -3481,7 +3457,6 @@ _brew() {
     shellenv) _brew_shellenv ;;
     source) _brew_source ;;
     style) _brew_style ;;
-    sync_tap_workflows) _brew_sync_tap_workflows ;;
     tab) _brew_tab ;;
     tap) _brew_tap ;;
     tap-info) _brew_tap_info ;;

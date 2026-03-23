@@ -1651,21 +1651,6 @@ __fish_brew_complete_arg 'style; and not __fish_seen_argument -l cask -l casks' 
 __fish_brew_complete_arg 'style; and not __fish_seen_argument -l formula -l formulae' -a '(__fish_brew_suggest_casks_all)'
 
 
-__fish_brew_complete_cmd 'sync_tap_workflows' 'Fetch and adapt upstream Homebrew CI workflow files for use in a third-party tap'
-__fish_brew_complete_arg 'sync_tap_workflows' -l bot-email -d 'Commit email for the automated bump bot (used in autobump.yml)'
-__fish_brew_complete_arg 'sync_tap_workflows' -l bot-username -d 'GitHub username for the automated bump bot (used in autobump.yml)'
-__fish_brew_complete_arg 'sync_tap_workflows' -l branch -d 'Branch name for push triggers in workflows (default: `main`)'
-__fish_brew_complete_arg 'sync_tap_workflows' -l cask -d 'Sync cask CI workflows from Homebrew/homebrew-cask'
-__fish_brew_complete_arg 'sync_tap_workflows' -l debug -d 'Display any debugging information'
-__fish_brew_complete_arg 'sync_tap_workflows' -l dry-run -d 'Print what would be done rather than doing it'
-__fish_brew_complete_arg 'sync_tap_workflows' -l formula -d 'Sync formula CI workflows from Homebrew/homebrew-core'
-__fish_brew_complete_arg 'sync_tap_workflows' -l help -d 'Show this message'
-__fish_brew_complete_arg 'sync_tap_workflows' -l pull-label -d 'Label name for PR-pull workflows in publish.yml (default: `pr-pull`)'
-__fish_brew_complete_arg 'sync_tap_workflows' -l quiet -d 'Make some output more quiet'
-__fish_brew_complete_arg 'sync_tap_workflows' -l verbose -d 'Make some output more verbose'
-__fish_brew_complete_arg 'sync_tap_workflows' -a '(__fish_brew_suggest_taps_installed)'
-
-
 __fish_brew_complete_cmd 'tab' 'Edit tab information for installed formulae or casks'
 __fish_brew_complete_arg 'tab' -l cask -d 'Only mark casks'
 __fish_brew_complete_arg 'tab' -l debug -d 'Display any debugging information'
