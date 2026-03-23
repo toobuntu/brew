@@ -64,4 +64,98 @@ RSpec.describe Homebrew::DevCmd::Extract do
       expect(Formulary.factory(path).version).to eq "0.2"
     end
   end
+
+  describe "#add_quarantine_postflight" do
+    subject(:command) { described_class.new(["somecask", "homebrew/foo"]) }
+
+    let(:cask_content_with_app) do
+      <<~RUBY
+        cask "mycask" do
+          version "1.0"
+          sha256 "abc123"
+
+          url "https://example.com/mycask-1.0.dmg"
+          homepage "https://example.com"
+
+          app "MyCask.app"
+        end
+      RUBY
+    end
+
+    let(:cask_content_with_multiple_apps) do
+      <<~RUBY
+        cask "mycask" do
+          version "1.0"
+          sha256 "abc123"
+
+          url "https://example.com/mycask-1.0.dmg"
+          homepage "https://example.com"
+
+          app "MyCask.app"
+          app "MyCaskHelper.app"
+        end
+      RUBY
+    end
+
+    let(:cask_content_no_app) do
+      <<~RUBY
+        cask "mycask" do
+          version "1.0"
+          sha256 "abc123"
+
+          url "https://example.com/mycask-1.0.pkg"
+          homepage "https://example.com"
+
+          pkg "MyCask.pkg"
+        end
+      RUBY
+    end
+
+    let(:cask_content_with_existing_quarantine) do
+      <<~RUBY
+        cask "mycask" do
+          version "1.0"
+          sha256 "abc123"
+
+          url "https://example.com/mycask-1.0.dmg"
+          homepage "https://example.com"
+
+          app "MyCask.app"
+
+          postflight do
+            system_command "/usr/bin/xattr",
+                           args: ["-dr", "com.apple.quarantine", "#{appdir}/MyCask.app"],
+                           sudo: false
+          end
+        end
+      RUBY
+    end
+
+    it "adds a postflight block for a single app stanza" do
+      result = command.send(:add_quarantine_postflight, cask_content_with_app)
+      expect(result).to include("postflight do")
+      expect(result).to include("com.apple.quarantine")
+      expect(result).to include("MyCask.app")
+      expect(result).to include("system_command \"/usr/bin/xattr\"")
+    end
+
+    it "adds xattr removal for each app when multiple app stanzas are present" do
+      result = command.send(:add_quarantine_postflight, cask_content_with_multiple_apps)
+      expect(result).to include("MyCask.app")
+      expect(result).to include("MyCaskHelper.app")
+      expect(result.scan("com.apple.quarantine").count).to eq(2)
+    end
+
+    it "returns content unchanged and warns when no app stanza is found" do
+      expect(command).to receive(:opoo).with(/No app stanza found/)
+      result = command.send(:add_quarantine_postflight, cask_content_no_app)
+      expect(result).to eq(cask_content_no_app)
+    end
+
+    it "returns content unchanged and warns when postflight already handles quarantine" do
+      expect(command).to receive(:opoo).with(/already handles quarantine/)
+      result = command.send(:add_quarantine_postflight, cask_content_with_existing_quarantine)
+      expect(result).to eq(cask_content_with_existing_quarantine)
+    end
+  end
 end

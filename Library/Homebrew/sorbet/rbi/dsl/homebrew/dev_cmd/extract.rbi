@@ -12,13 +12,31 @@ end
 
 class Homebrew::DevCmd::Extract::Args < Homebrew::CLI::Args
   sig { returns(T::Boolean) }
+  def cask?; end
+
+  sig { returns(T::Boolean) }
+  def casks?; end
+
+  sig { returns(T::Boolean) }
   def f?; end
 
   sig { returns(T::Boolean) }
   def force?; end
 
+  sig { returns(T::Boolean) }
+  def formula?; end
+
+  sig { returns(T::Boolean) }
+  def formulae?; end
+
   sig { returns(T.nilable(String)) }
   def git_revision; end
+
+  sig { returns(T::Boolean) }
+  def no_quarantine?; end
+
+  sig { returns(T::Boolean) }
+  def unversioned?; end
 
   sig { returns(T.nilable(String)) }
   def version; end
