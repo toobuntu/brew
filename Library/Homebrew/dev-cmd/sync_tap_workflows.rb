@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "abstract_command"
+require "erb"
 require "tap"
 require "utils/curl"
 
@@ -45,6 +46,8 @@ module Homebrew
                description: "Commit email for the automated bump bot (used in autobump.yml)."
         switch "--dry-run", "-n",
                description: "Print what would be done rather than doing it."
+        flag   "--pull-label=",
+               description: "Label name for PR-pull workflows in publish.yml (default: `pr-pull`)."
 
         named_args :tap, number: 1
       end
@@ -82,6 +85,14 @@ module Homebrew
             synced_paths << process_workflow(content, filename, tap,
                                              branch:, bot_username:, bot_email:, workflows_dir:)
           end
+
+          label = args.pull_label || "pr-pull"
+          {
+            "tests.yml"   => render_tests_yml(branch:),
+            "publish.yml" => render_publish_yml(branch:, label:),
+          }.each do |filename, content|
+            synced_paths << write_static_workflow(content, filename, workflows_dir:)
+          end
         end
 
         action = args.dry_run? ? "Would sync" : "Synced"
@@ -97,6 +108,122 @@ module Homebrew
         result = Utils::Curl.curl_output("--silent", "--fail", "--location", url)
         odie "Failed to fetch #{url}: #{result.stderr}" unless result.status.success?
         result.stdout
+      end
+
+      sig { params(content: String, filename: String, workflows_dir: Pathname).returns(Pathname) }
+      def write_static_workflow(content, filename, workflows_dir:)
+        output_path = workflows_dir/filename
+        if args.dry_run?
+          ohai "Would write #{output_path}"
+          puts content
+        else
+          workflows_dir.mkpath
+          output_path.write(content)
+          ohai "Wrote #{output_path}"
+        end
+        output_path
+      end
+
+      sig { params(branch: String).returns(String) }
+      def render_tests_yml(branch:)
+        ERB.new(<<~ERB, trim_mode: "-").result(binding)
+          name: brew test-bot
+
+          on:
+            push:
+              branches:
+                - <%= branch %>
+            pull_request:
+
+          jobs:
+            test-bot:
+              strategy:
+                matrix:
+                  os: [ ubuntu-22.04, macos-15-intel, macos-26 ]
+              runs-on: ${{ matrix.os }}
+              permissions:
+                actions: read
+                checks: read
+                contents: read
+                pull-requests: read
+              steps:
+                - name: Set up Homebrew
+                  id: set-up-homebrew
+                  uses: Homebrew/actions/setup-homebrew@main
+                  with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+
+                - name: Cache Homebrew Bundler RubyGems
+                  uses: actions/cache@v4
+                  with:
+                    path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+                    key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+                    restore-keys: ${{ matrix.os }}-rubygems-
+
+                - run: brew test-bot --only-cleanup-before
+
+                - run: brew test-bot --only-setup
+
+                - run: brew test-bot --only-tap-syntax
+
+                - run: brew test-bot --only-formulae
+                  if: github.event_name == 'pull_request'
+
+                - name: Upload bottles as artifact
+                  if: always() && github.event_name == 'pull_request'
+                  uses: actions/upload-artifact@v4
+                  with:
+                    name: bottles_${{ matrix.os }}
+                    path: '*.bottle.*'
+        ERB
+      end
+
+      sig { params(branch: String, label: String).returns(String) }
+      def render_publish_yml(branch:, label:)
+        ERB.new(<<~ERB, trim_mode: "-").result(binding)
+          name: brew pr-pull
+
+          on:
+            pull_request_target:
+              types:
+                - labeled
+
+          jobs:
+            pr-pull:
+              if: contains(github.event.pull_request.labels.*.name, '<%= label %>')
+              runs-on: ubuntu-22.04
+              permissions:
+                actions: read
+                checks: read
+                contents: write
+                issues: read
+                pull-requests: write
+              steps:
+                - name: Set up Homebrew
+                  uses: Homebrew/actions/setup-homebrew@main
+                  with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+
+                - name: Set up git
+                  uses: Homebrew/actions/git-user-config@main
+
+                - name: Pull bottles
+                  env:
+                    HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    PULL_REQUEST: ${{ github.event.pull_request.number }}
+                  run: brew pr-pull --debug --tap="$GITHUB_REPOSITORY" "$PULL_REQUEST"
+
+                - name: Push commits
+                  uses: Homebrew/actions/git-try-push@main
+                  with:
+                    branch: <%= branch %>
+
+                - name: Delete branch
+                  if: github.event.pull_request.head.repo.fork == false
+                  env:
+                    BRANCH: ${{ github.event.pull_request.head.ref }}
+                  run: git push --delete origin "$BRANCH"
+        ERB
       end
 
       sig {

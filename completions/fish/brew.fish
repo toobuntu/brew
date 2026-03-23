@@ -1660,6 +1660,7 @@ __fish_brew_complete_arg 'sync_tap_workflows' -l debug -d 'Display any debugging
 __fish_brew_complete_arg 'sync_tap_workflows' -l dry-run -d 'Print what would be done rather than doing it'
 __fish_brew_complete_arg 'sync_tap_workflows' -l formula -d 'Sync formula CI workflows from Homebrew/homebrew-core'
 __fish_brew_complete_arg 'sync_tap_workflows' -l help -d 'Show this message'
+__fish_brew_complete_arg 'sync_tap_workflows' -l pull-label -d 'Label name for PR-pull workflows in publish.yml (default: `pr-pull`)'
 __fish_brew_complete_arg 'sync_tap_workflows' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'sync_tap_workflows' -l verbose -d 'Make some output more verbose'
 __fish_brew_complete_arg 'sync_tap_workflows' -a '(__fish_brew_suggest_taps_installed)'

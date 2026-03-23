@@ -28,4 +28,7 @@ class Homebrew::DevCmd::SyncTapWorkflows::Args < Homebrew::CLI::Args
 
   sig { returns(T::Boolean) }
   def formula?; end
+
+  sig { returns(T.nilable(String)) }
+  def pull_label; end
 end

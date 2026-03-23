@@ -2537,6 +2537,7 @@ _brew_sync_tap_workflows() {
       --dry-run
       --formula
       --help
+      --pull-label
       --quiet
       --verbose
       "

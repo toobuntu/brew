@@ -2048,6 +2048,7 @@ _brew_sync_tap_workflows() {
     '--dry-run[Print what would be done rather than doing it]' \
     '--formula[Sync formula CI workflows from Homebrew/homebrew-core]' \
     '--help[Show this message]' \
+    '--pull-label[Label name for PR-pull workflows in publish.yml (default: `pr-pull`)]' \
     '--quiet[Make some output more quiet]' \
     '--verbose[Make some output more verbose]' \
     - tap \

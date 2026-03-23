@@ -3281,6 +3281,10 @@ tap.
 
 : Print what would be done rather than doing it.
 
+`--pull-label`
+
+: Label name for PR-pull workflows in publish.yml (default: `pr-pull`).
+
 ### `tap-new` \[*`options`*\] *`user`*`/`*`repo`*
 
 Generate the template files for a new tap.
