@@ -35,6 +35,20 @@ RSpec.describe RuboCop::Cop::Cask::NoOverrides, :config do
     CASK
   end
 
+  it "does not crash on non-hash `depends_on` stanzas in `on_*` blocks" do
+    expect_no_offenses <<~CASK
+      cask "foo" do
+        on_macos do
+          depends_on :macos
+          depends_on
+        end
+        on_linux do
+          depends_on :linux
+        end
+      end
+    CASK
+  end
+
   it "accepts non-overridable stanzas in `on_*` blocks" do
     expect_no_offenses <<~CASK
       cask 'foo' do
@@ -247,6 +261,44 @@ RSpec.describe RuboCop::Cop::Cask::NoOverrides, :config do
         end
         on_intel do
           depends_on macos: ">= :ventura"
+        end
+
+        sha256 "aaa"
+        url "https://brew.sh/foo-mac.dmg"
+        name 'Foo'
+      end
+    CASK
+  end
+
+  it "accepts `depends_on macos: :any` in architecture blocks" do
+    expect_no_offenses <<~CASK
+      cask "foo" do
+        version "1.2.3"
+
+        on_arm do
+          depends_on macos: :any
+        end
+        on_intel do
+          depends_on :macos
+        end
+
+        sha256 "aaa"
+        url "https://brew.sh/foo-mac.dmg"
+        name 'Foo'
+      end
+    CASK
+  end
+
+  it "accepts different `depends_on macos:` stanzas when one is `:any`" do
+    expect_no_offenses <<~CASK
+      cask "foo" do
+        version "1.2.3"
+
+        on_arm do
+          depends_on macos: ">= :monterey"
+        end
+        on_intel do
+          depends_on macos: :any
         end
 
         sha256 "aaa"
