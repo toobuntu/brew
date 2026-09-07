@@ -55,7 +55,9 @@ class FormulaVersions
 
     yield @formula_at_revision[revision] ||= begin
       contents = file_contents_at_revision(revision, formula_relative_path)
-      nostdout { Formulary.from_contents(name, path, contents, ignore_errors: true) }
+      BottleSpecification.with_legacy_syntax do
+        nostdout { Formulary.from_contents(name, path, contents, ignore_errors: true) }
+      end
     end
   rescue *IGNORED_EXCEPTIONS => e
     require "utils/backtrace"

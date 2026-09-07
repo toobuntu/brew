@@ -6,6 +6,28 @@ require "utils/output"
 class BottleSpecification
   include Utils::Output::Mixin
 
+  LEGACY_SYNTAX_KEY = :homebrew_legacy_bottle_syntax
+  private_constant :LEGACY_SYNTAX_KEY
+
+  sig {
+    type_parameters(:U)
+      .params(_block: T.proc.returns(T.type_parameter(:U)))
+      .returns(T.type_parameter(:U))
+  }
+  def self.with_legacy_syntax(&_block)
+    thread = Thread.current
+    previous = thread.thread_variable_get(LEGACY_SYNTAX_KEY)
+    thread.thread_variable_set(LEGACY_SYNTAX_KEY, true)
+    yield
+  ensure
+    thread&.thread_variable_set(LEGACY_SYNTAX_KEY, previous)
+  end
+
+  sig { returns(T::Boolean) }
+  def self.legacy_syntax?
+    Thread.current.thread_variable_get(LEGACY_SYNTAX_KEY) == true
+  end
+
   # Relocatable cellar using placeholders, e.g. `@@HOMEBREW_PREFIX@@`.
   # Requires relocating text files and binaries.
   ANY_CELLAR = :any
@@ -35,6 +57,7 @@ class BottleSpecification
     @collector = T.let(Utils::Bottles::Collector.new, Utils::Bottles::Collector)
     @root_url_specs = T.let({}, T::Hash[Symbol, T.untyped])
     @root_url = T.let(nil, T.nilable(String))
+    @legacy_cellar = T.let(nil, T.nilable(T.any(Symbol, String)))
   end
 
   sig { params(val: T.nilable(Integer)).returns(Integer) }
@@ -133,22 +156,36 @@ class BottleSpecification
   def sha256(hash)
     sha256_regex = /^[a-f0-9]{64}$/i
 
-    # find new `sha256 big_sur: "69489ae397e4645..."` format
-    tag, digest = hash.find do |key, value|
-      # Don't use `odie` in this case. We want to be able to catch this exception
-      # in runtime when getting committed version info in formula auditor
-      raise LegacyDSLError.new(:sha256, hash) if key.is_a?(String) && key.match?(sha256_regex) && value.is_a?(Symbol)
+    legacy = hash.find do |key, value|
+      key.is_a?(String) && key.match?(sha256_regex) && value.is_a?(Symbol)
+    end
+    if legacy
+      # Historical formula loading needs to cross the 2021 bottle syntax wall,
+      # while current formulae must continue to reject the removed DSL.
+      raise LegacyDSLError.new(:sha256, hash) unless self.class.legacy_syntax?
 
-      key.is_a?(Symbol) && value.is_a?(String) && value.match?(sha256_regex)
+      digest, tag = legacy
+    else
+      # find new `sha256 big_sur: "69489ae397e4645..."` format
+      tag, digest = hash.find do |key, value|
+        key.is_a?(Symbol) && value.is_a?(String) && value.match?(sha256_regex)
+      end
     end
 
     odie "Invalid sha256 hash: #{digest}" if !tag || !digest
 
     tag = Utils::Bottles::Tag.from_symbol(T.cast(tag, Symbol))
 
-    cellar = hash[:cellar] || tag.default_cellar
+    cellar = hash[:cellar] || @legacy_cellar || tag.default_cellar
 
     collector.add(tag, checksum: Checksum.new(digest.to_s), cellar:)
+  end
+
+  sig { params(value: T.any(Symbol, String)).returns(T.any(Symbol, String)) }
+  def cellar(value)
+    raise LegacyDSLError.new(:cellar, value) unless self.class.legacy_syntax?
+
+    @legacy_cellar = value
   end
 
   sig {

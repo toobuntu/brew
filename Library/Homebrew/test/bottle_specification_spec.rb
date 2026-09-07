@@ -39,6 +39,33 @@ RSpec.describe BottleSpecification do
         expect(checksum[:cellar]).to eq(tag_spec.cellar)
       end
     end
+
+    it "rejects legacy syntax outside historical formula loading" do
+      expect { bottle_spec.sha256(("deadbeef" * 8) => :big_sur) }
+        .to raise_error(LegacyDSLError)
+    end
+
+    it "rejects a legacy cellar outside historical formula loading" do
+      expect { bottle_spec.cellar(:any) }.to raise_error(LegacyDSLError)
+    end
+
+    it "restores legacy syntax rejection after the compatibility scope" do
+      digest = "deadbeef" * 8
+      described_class.with_legacy_syntax do
+        bottle_spec.cellar(:any)
+        bottle_spec.sha256(digest => :big_sur)
+      end
+
+      expect { described_class.new.sha256(digest => :big_sur) }
+        .to raise_error(LegacyDSLError)
+    end
+
+    it "restores legacy syntax rejection when the compatibility scope raises" do
+      expect { described_class.with_legacy_syntax { raise "boom" } }.to raise_error(RuntimeError, "boom")
+
+      expect { described_class.new.sha256(("deadbeef" * 8) => :big_sur) }
+        .to raise_error(LegacyDSLError)
+    end
   end
 
   describe "#compatible_locations?" do
