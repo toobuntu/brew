@@ -485,7 +485,9 @@ module Homebrew
         override = @overrides&.advisory_override(formula_name, hit.identifiers) if formula_name
         return selected unless override
 
-        status, evidence = selected || [nil, hit.primary_evidence]
+        status, evidence = selected ||
+                           (results.find { |candidate, _| candidate.state == override.state } if override.state) ||
+                           [nil, hit.primary_evidence]
         state = override.state || status&.state
         return selected unless state
 

@@ -165,6 +165,32 @@ RSpec.describe Homebrew::Vulns::Match do
       expect(matcher.range_status(hit)).to be_nil
     end
 
+    it "uses resolved resource evidence for a fixed override of an unknown aggregate" do
+      overrides = Homebrew::Vulns::AdvisoryOverrides.new({
+        "requests" => { "advisories" => {
+          "CVE-1" => { "range_state" => "fixed" },
+        } },
+      })
+      overridden = described_class.new(repology:, cpan_sec:, overrides:)
+      v = vuln("id" => "CVE-1", "affected" => [
+        { "package" => { "ecosystem" => "GIT", "name" => "https://github.com/psf/requests" },
+          "ranges"  => [{ "type" => "GIT", "events" => [{ "fixed" => "e47e56d" }] }] },
+        { "package" => { "ecosystem" => "PyPI", "name" => "certifi" },
+          "ranges"  => [{ "type"   => "ECOSYSTEM",
+                          "events" => [{ "introduced" => "0" }, { "fixed" => "2024.1.0" }] }] },
+      ])
+      hit = make_hit(v,
+                     ev(:git, ecosystem: "GIT", name: "https://github.com/psf/requests",
+                              subject_version: "2.31.0", key: "https://github.com/psf/requests"),
+                     ev(:registry, ecosystem: "PyPI", name: "certifi", subject_version: "2024.2.2",
+                                   key: "pkg:pypi/certifi@2024.2.2", resource: "certifi"))
+
+      status, evidence = overridden.range_status(hit, formula_name: "requests") ||
+                         raise("expected the reviewed override to resolve the range")
+      expect([status.state, status.fixed_in, evidence.resource, evidence.key])
+        .to eq [:fixed, "2024.1.0", "certifi", "pkg:pypi/certifi@2024.2.2"]
+    end
+
     it "returns the registry-entry status when GIT ranges are uncomparable" do
       v = vuln("id" => "CVE-1", "affected" => [
         { "package" => { "ecosystem" => "GIT", "name" => "https://github.com/jqlang/jq" },
